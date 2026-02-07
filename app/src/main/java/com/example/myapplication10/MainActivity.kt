@@ -1,7 +1,6 @@
 package com.example.myapplication10
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -9,7 +8,6 @@ import android.os.Build
 import android.os.Bundle
 import android.view.ViewGroup
 import android.webkit.CookieManager
-import android.webkit.DownloadListener
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -21,24 +19,37 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.myapplication10.ui.theme.MyApplication10Theme
 
@@ -72,22 +83,46 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// ---------------- UI 部分 ----------------
+// ---------------- UI 美化部分 ----------------
+
+// 定义一组柔和的颜色用于区分不同账号
+private val SlotColors = listOf(
+    Color(0xFF4285F4), // Google Blue
+    Color(0xFFDB4437), // Red
+    Color(0xFFF4B400), // Yellow
+    Color(0xFF0F9D58), // Green
+    Color(0xFFAB47BC)  // Purple
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountSwitcherHome(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val slots = (1..5).toList()
+    
+    // 简单的入场动画状态
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.surface, // 使用纯净背景
         topBar = {
-            TopAppBar(
-                title = { Text("百度网盘 · 多账号分身") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            CenterAlignedTopAppBar(
+                title = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "网盘多开助手", 
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -96,36 +131,64 @@ fun AccountSwitcherHome(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp, start = 16.dp, end = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                InfoCard()
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { -40 })
+                ) {
+                    InfoCard()
+                }
             }
             
             item {
                 Text(
-                    text = "账号列表",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.primary
+                    text = "选择账号",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp)
                 )
             }
 
-            items(slots) { slot ->
-                AccountSlotCard(
-                    slot = slot,
-                    onOpen = { MainActivity.openAccount(context, slot) }
-                )
+            itemsIndexed(slots) { index, slot ->
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn() + slideInVertically(
+                        animationSpec = spring(stiffness = Spring.StiffnessLow),
+                        initialOffsetY = { 100 * (index + 1) } 
+                    )
+                ) {
+                    AccountSlotCard(
+                        slot = slot,
+                        color = SlotColors[index % SlotColors.size],
+                        onOpen = { MainActivity.openAccount(context, slot) }
+                    )
+                }
             }
             
             item {
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = "注意：为实现完全隔离，请确保在 AndroidManifest.xml 中为每个 AccountActivity 配置不同的 android:process 属性。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "不同账号运行在完全独立的进程中，数据互不干扰。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
             }
         }
     }
@@ -134,65 +197,130 @@ fun AccountSwitcherHome(modifier: Modifier = Modifier) {
 @Composable
 fun InfoCard() {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "✨ 独立进程与数据隔离",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "每个账号槽位拥有独立的 Cookie 和缓存目录。您可以在不同槽位登录不同账号，互不干扰。",
-                style = MaterialTheme.typography.bodyMedium
-            )
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = "独立进程隔离",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = "Cookie 与 缓存文件 物理隔离",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                )
+            }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AccountSlotCard(
     slot: Int,
+    color: Color,
     onOpen: () -> Unit
 ) {
-    ElevatedCard(
+    Card(
         onClick = onOpen,
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, pressedElevation = 0.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
+            // 左侧：带颜色的头像
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(color.copy(alpha = 0.2f), color.copy(alpha = 0.1f))
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "#$slot",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = color
+                )
+            }
+
             Spacer(modifier = Modifier.width(16.dp))
+
+            // 中间：文字信息
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "账号槽位 #$slot",
+                    text = "网盘账号 $slot",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    text = "独立 WebView 环境",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "独立环境就绪",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            Button(onClick = onOpen) {
-                Text("进入")
+
+            // 右侧：进入按钮
+            FilledTonalIconButton(
+                onClick = onOpen,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = color.copy(alpha = 0.1f),
+                    contentColor = color
+                )
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "进入")
             }
         }
     }
 }
 
-// ---------------- Activity 与 WebView 逻辑 ----------------
+// ---------------- Activity 与 WebView 逻辑 (保留核心逻辑) ----------------
 
 /**
  * 抽象基类：处理进程数据目录隔离
@@ -201,14 +329,14 @@ abstract class AccountSlotActivity : ComponentActivity() {
     abstract val slot: Int
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 核心隔离逻辑：必须在 WebView 实例化前调用
         setupWebViewDataDirectory()
-        
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MyApplication10Theme {
-                AccountWebViewScreen(slot = slot, onClose = { finish() })
+                // 将颜色传递给 WebView 界面，保持风格一致
+                val themeColor = SlotColors[(slot - 1) % SlotColors.size]
+                AccountWebViewScreen(slot = slot, themeColor = themeColor, onClose = { finish() })
             }
         }
     }
@@ -216,19 +344,15 @@ abstract class AccountSlotActivity : ComponentActivity() {
     private fun setupWebViewDataDirectory() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             try {
-                // 使用官方 API 设置数据目录后缀
-                // 同一个进程中只能设置一次，且必须在创建 WebView 之前
                 val processName = "account_$slot"
                 WebView.setDataDirectorySuffix(processName)
             } catch (e: Exception) {
-                // 如果已经设置过或抛出异常（例如多进程配置错误），打印日志
                 e.printStackTrace()
             }
         }
     }
 }
 
-// 具体实现类，需在 Manifest 中注册（建议配置 android:process）
 class Account1Activity : AccountSlotActivity() { override val slot: Int = 1 }
 class Account2Activity : AccountSlotActivity() { override val slot: Int = 2 }
 class Account3Activity : AccountSlotActivity() { override val slot: Int = 3 }
@@ -237,17 +361,12 @@ class Account5Activity : AccountSlotActivity() { override val slot: Int = 5 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
+fun AccountWebViewScreen(slot: Int, themeColor: Color, onClose: () -> Unit) {
     val context = LocalContext.current
-    // 状态管理
     var webViewTitle by remember { mutableStateOf("加载中...") }
     var loadProgress by remember { mutableIntStateOf(0) }
     var currentUrl by remember { mutableStateOf("") }
-    
-    // WebView 实例引用，用于控制返回
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
-
-    // 文件选择回调处理
     var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     
     val fileLauncher = rememberLauncherForActivityResult(
@@ -257,7 +376,6 @@ fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
         filePathCallback = null
     }
 
-    // 处理物理返回键
     BackHandler(enabled = webViewRef?.canGoBack() == true) {
         webViewRef?.goBack()
     }
@@ -273,15 +391,14 @@ fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
                                 text = webViewTitle,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium
                             )
-                            if (currentUrl.isNotEmpty()) {
-                                Text(
-                                    text = "账号 $slot",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text(
+                                text = "账号 $slot · ${if (currentUrl.contains("baidu")) "百度网盘" else "外部链接"}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
                         }
                     },
                     navigationIcon = {
@@ -293,18 +410,25 @@ fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
                         IconButton(onClick = { webViewRef?.reload() }) {
                             Icon(Icons.Default.Refresh, "刷新")
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = themeColor.copy(alpha = 0.1f), // 使用淡化的主题色作为背景
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = themeColor,
+                        navigationIconContentColor = themeColor
+                    )
                 )
                 if (loadProgress in 1..99) {
                     LinearProgressIndicator(
                         progress = { loadProgress / 100f },
                         modifier = Modifier.fillMaxWidth(),
+                        color = themeColor,
+                        trackColor = themeColor.copy(alpha = 0.2f)
                     )
                 }
             }
         }
     ) { padding ->
-        // 使用 AndroidView 嵌入 WebView
         AndroidView(
             modifier = Modifier
                 .fillMaxSize()
@@ -320,29 +444,21 @@ fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
             },
             update = { webView ->
                 webViewRef = webView
-                
-                // 设置 ChromeClient 处理 UI 交互（标题、进度、文件选择）
                 webView.webChromeClient = object : WebChromeClient() {
                     override fun onReceivedTitle(view: WebView?, title: String?) {
                         title?.let { webViewTitle = it }
                     }
-
                     override fun onProgressChanged(view: WebView?, newProgress: Int) {
                         loadProgress = newProgress
                     }
-
                     override fun onShowFileChooser(
                         webView: WebView?,
                         newFilePathCallback: ValueCallback<Array<Uri>>?,
                         fileChooserParams: FileChooserParams?
                     ): Boolean {
-                        // 如果有未处理的回调，先取消
                         filePathCallback?.onReceiveValue(null)
                         filePathCallback = newFilePathCallback
-                        
                         try {
-                            // 启动文件选择器，这里简单处理，未区分 mimeType
-                            // 实际使用可以解析 fileChooserParams?.acceptTypes
                             fileLauncher.launch(arrayOf("*/*"))
                         } catch (e: Exception) {
                             filePathCallback = null
@@ -351,32 +467,22 @@ fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
                         return true
                     }
                 }
-
-                // 设置 WebViewClient 处理页面加载
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         currentUrl = url ?: ""
-                        // 注入一些 JS 来优化移动端显示（可选）
                     }
                 }
-
-                // 设置下载监听
                 webView.setDownloadListener { url, _, _, _, _ ->
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         context.startActivity(intent)
-                    } catch (e: Exception) {
-                        // 处理没有应用能打开此链接的情况
-                    }
+                    } catch (e: Exception) { }
                 }
-
-                // 首次加载
                 if (webView.url == null) {
                     webView.loadUrl(BAIDU_PAN_HOME)
                 }
             },
             onRelease = { webView ->
-                // 组件销毁时清理 WebView
                 webView.stopLoading()
                 webView.destroy()
             }
@@ -384,36 +490,23 @@ fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
     }
 }
 
-/**
- * 统一配置 WebView 设置
- */
 @SuppressLint("SetJavaScriptEnabled")
 private fun WebView.configureWebView(webView: WebView) {
     webView.settings.apply {
         javaScriptEnabled = true
-        domStorageEnabled = true // 关键：许多现代网页登录需要 DOM Storage
+        domStorageEnabled = true
         databaseEnabled = true
         useWideViewPort = true
         loadWithOverviewMode = true
-        
-        // 允许混合内容（HTTPS 页面加载 HTTP 资源），避免部分图片不显示
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         }
-        
-        // 启用缩放
         setSupportZoom(true)
         builtInZoomControls = true
         displayZoomControls = false
-
-        // 缓存设置
         cacheMode = WebSettings.LOAD_DEFAULT
-        
-        // 模拟 UserAgent，有时可以避免被识别为爬虫或旧版浏览器
         userAgentString = USER_AGENT_OVERRIDE
     }
-
-    // Cookie 设置
     CookieManager.getInstance().apply {
         setAcceptCookie(true)
         setAcceptThirdPartyCookies(webView, true)
