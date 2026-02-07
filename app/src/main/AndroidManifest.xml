@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+
+    <application
+        android:name=".MyApplication10App"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyApplication10">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.MyApplication10">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 账号Activity，每个账号运行在独立进程中 -->
+        <activity
+            android:name=".Account1Activity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication10"
+            android:process=":account1"
+            android:launchMode="singleTask" />
+        <activity
+            android:name=".Account2Activity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication10"
+            android:process=":account2"
+            android:launchMode="singleTask" />
+        <activity
+            android:name=".Account3Activity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication10"
+            android:process=":account3"
+            android:launchMode="singleTask" />
+        <activity
+            android:name=".Account4Activity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication10"
+            android:process=":account4"
+            android:launchMode="singleTask" />
+        <activity
+            android:name=".Account5Activity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication10"
+            android:process=":account5"
+            android:launchMode="singleTask" />
+    </application>
+
+</manifest>
