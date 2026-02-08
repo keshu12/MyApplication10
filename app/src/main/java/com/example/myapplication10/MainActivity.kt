@@ -1,6 +1,7 @@
 package com.example.myapplication10
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -204,7 +205,7 @@ class Account5Activity : AccountSlotActivity() { override val slot = 5 }
 fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
     val context = LocalContext.current
     var webViewTitle by remember { mutableStateOf("加载中...") }
-    var loadProgress by remember { mutableIntStateOf(0) }
+    var loadProgress by remember { mutableStateOf(0) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     
@@ -268,5 +269,11 @@ fun AccountWebViewScreen(slot: Int, onClose: () -> Unit) {
                 if (webView.url == null) webView.loadUrl(BAIDU_PAN_HOME)
             }
         )
+    }
+}
+
+class MyApplication10App : Application() {
+    override fun onCreate() {
+        super.onCreate()
     }
 }
