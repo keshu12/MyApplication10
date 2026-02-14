@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 主圆形背景 -->
+    <path
+        android:fillColor="#42A5F5"
+        android:pathData="M54,14C76.0914,14 94,31.9086 94,54C94,76.0914 76.0914,94 54,94C31.9086,94 14,76.0914 14,54C14,31.9086 31.9086,14 54,14Z"/>
+    <!-- 中心图标 - 现代风格的字母M -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,38L46,64L54,52L62,64L72,38H80L54,80L28,38H36Z"/>
+    <!-- 高光效果 -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M40,42L48,60L54,48L60,60L68,42H74L54,72L34,42H40Z"/>
+    <!-- 底部装饰 -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M46,82C46,83.1046 46.8954,84 48,84H60C61.1046,84 62,83.1046 62,82V80C62,78.8954 61.1046,78 60,78H48C46.8954,78 46,78.8954 46,80V82Z"/>
+    <!-- 顶部装饰 -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M48,24C48,22.8954 48.8954,22 50,22H58C59.1046,22 60,22.8954 60,24V26C60,27.1046 59.1046,28 58,28H50C48.8954,28 48,27.1046 48,26V24Z"/>
+</vector>
